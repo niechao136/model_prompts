@@ -9,7 +9,10 @@
 
 ### 第一步：设备信息提取
 
-1. **字段提取（所有字段均返回数组；若无匹配返回空数组）：**
+1. **判断是否要使用之前识别出的设备：**
+    - 若问题包含 `上述`、`上面`、`它们` 等表示之前结果的指代词 → `assign_device = true`
+
+2. **字段提取（所有字段均返回数组；若无匹配返回空数组）：**
 
     - **ID字段 (`id`)：**
         - 在问题文本中**精确匹配** `{{#1741582826180.id#}}` 内的任一元素，将所有匹配项存入 `id` 字段。
@@ -32,7 +35,7 @@
     - **标签2字段 (`label2`)：**
         - 在问题文本中**精确匹配** `{{#1741582826180.label2#}}` 内的任一元素，将所有匹配项存入 `label2` 字段。
 
-2. **条件标记：**
+3. **条件标记：**
 
     根据问题文本中的描述设置以下标记：
     - **ID标记 (`assign_id`)**:
@@ -61,16 +64,25 @@
             - 如果问题文本为 `请将Android设备关机`，则 `assign_label2 = false`
             - 如果问题文本为 `请将标签为Android的设备关机`，则 `assign_label2 = true`
     - **在线标记 (`assign_online`)**: 
-        - 当问题中包含 `在线设备`、`在线...设备` 等类似描述时 → `assign_online = true`
         - 当问题中包含 `上线后执行` 等类似描述时 → `assign_online = false`
+        - 当问题中包含 `在线设备`、`在线...` 等类似描述时 → `assign_online = true`
         - **示例：**
             - 如果问题文本为 `请将安卓设备关机，设备上线后执行`，则 `assign_online = false`
             - 如果问题文本为 `请将在线的安卓设备关机`，则 `assign_online = true`
     - **离线标记 (`assign_offline`)**: 
-        - 当问题中包含 `离线设备`、`离线...设备` 等类似描述时 → `assign_offline = true`
+        - 当问题中包含 `离线设备`、`离线...`、`断线中...` 等类似描述时 → `assign_offline = true`
         - **示例：**
             - 如果问题文本为 `请将安卓设备关机，设备上线后执行`，则 `assign_offline = false`
             - 如果问题文本为 `请将离线的安卓设备关机`，则 `assign_offline = true`
+   - **异常状态标记：**
+       - **assign_error**：
+            - 当问题中提及 `异常` 但未提及下列具体异常（`硬件异常`、`软件异常`、`电池异常`、`周边设备异常`、`设备安全异常`）时，设置 `assign_error = true`；
+            - 当问题中包含 `断线中` 等类似描述时 → `assign_error = false`
+       - **assign_hardware**：当问题中提及 `硬件异常` 时，设置 `assign_hardware = true`；
+       - **assign_software**：当问题中提及 `软件异常` 时，设置 `assign_software = true`；
+       - **assign_battery**：当问题中提及 `电池异常` 时，设置 `assign_battery = true`；
+       - **assign_peripheral**：当问题中提及 `周边外设异常` 时，设置 `assign_peripheral = true`；
+       - **assign_security**：当问题中提及 `设备安全异常` 时，设置 `assign_security = true`。
 
 ---
 
@@ -130,7 +142,14 @@
     "assign_label1": "<boolean>",
     "assign_label2": "<boolean>",
     "assign_online": "<boolean>",
-    "assign_offline": "<boolean>"
+    "assign_offline": "<boolean>",
+    "assign_device": "<boolean>",
+    "assign_error": "<boolean>",
+    "assign_hardware": "<boolean>",
+    "assign_software": "<boolean>",
+    "assign_battery": "<boolean>",
+    "assign_peripheral": "<boolean>",
+    "assign_security": "<boolean>"
   },
   "schedule": {
     "scheduleType": "<ONLINE | CRON ONCE | NONE>",
