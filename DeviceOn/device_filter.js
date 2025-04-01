@@ -1,3 +1,6 @@
+/**
+ * 处理设备筛选
+ */
 function handleLLM(text) {
   const regex = /```json([\s\S]*?)```/
   const _res = text.replaceAll(/<think>[\s\S]*?<\/think>/g, '')
@@ -12,7 +15,7 @@ function handleLLM(text) {
   }
   return obj
 }
-function main({text, device, assign_device}) {
+function main({text, device, type, content, question}) {
   device = JSON.parse(device)
   const list = Array.isArray(device) ? Array.from(device) : []
   const by_id = {}
@@ -20,45 +23,41 @@ function main({text, device, assign_device}) {
     by_id[o.id] = o
   })
   const obj = handleLLM(text)
-  const is_trigger = !!obj?.is_trigger
-  const assign_reboot = !!obj?.assign_reboot
+  const assign_remote = String(question).endsWith(' REMOTE_DESKTOP')
+  const assign_reboot = String(question).endsWith(' REBOOT')
+  const is_device = !!obj?.assign_device
   const assign_index = Number(obj?.assign_index)
   const assign_last = !!obj?.assign_last
-  const id = Array.isArray(obj?.targetDevices?.id) ? Array.from(obj.targetDevices.id) : []
-  const name = Array.isArray(obj?.targetDevices?.name) ? Array.from(obj.targetDevices.name) : []
-  const ip = Array.isArray(obj?.targetDevices?.ip) ? Array.from(obj.targetDevices.ip) : []
-  const os = Array.isArray(obj?.targetDevices?.os) ? Array.from(obj.targetDevices.os).map(s => String(s).toLowerCase()) : []
-  const label1 = Array.isArray(obj?.targetDevices?.label1) ? Array.from(obj.targetDevices.label1) : []
-  const label2 = Array.isArray(obj?.targetDevices?.label2) ? Array.from(obj.targetDevices.label2) : []
-  const assign_id = !!obj?.targetDevices?.assign_id
-  const assign_name = !!obj?.targetDevices?.assign_name
-  const assign_ip = !!obj?.targetDevices?.assign_ip
-  const assign_os = !!obj?.targetDevices?.assign_os
-  const assign_label1 = !!obj?.targetDevices?.assign_label1
-  const assign_label2 = !!obj?.targetDevices?.assign_label2
-  const assign_online = !!obj?.targetDevices?.assign_online
-  const assign_offline = !!obj?.targetDevices?.assign_offline
-  const assign_error = !!obj?.targetDevices?.assign_error
-  const assign_hardware = !!obj?.targetDevices?.assign_hardware
-  const assign_software = !!obj?.targetDevices?.assign_software
-  const assign_battery = !!obj?.targetDevices?.assign_battery
-  const assign_peripheral = !!obj?.targetDevices?.assign_peripheral
-  const assign_security = !!obj?.targetDevices?.assign_security
-  const actionCode = obj?.actionCode
+  const id = Array.isArray(obj?.id) ? Array.from(obj.id) : []
+  const name = Array.isArray(obj?.name) ? Array.from(obj.name) : []
+  const ip = Array.isArray(obj?.ip) ? Array.from(obj.ip) : []
+  const os = Array.isArray(obj?.os) ? Array.from(obj.os).map(s => String(s).toLowerCase()) : []
+  const label1 = Array.isArray(obj?.label1) ? Array.from(obj.label1) : []
+  const label2 = Array.isArray(obj?.label2) ? Array.from(obj.label2) : []
+  const assign_id = !!obj?.assign_id
+  const assign_name = !!obj?.assign_name
+  const assign_ip = !!obj?.assign_ip
+  const assign_os = !!obj?.assign_os
+  const assign_label1 = !!obj?.assign_label1
+  const assign_label2 = !!obj?.assign_label2
+  const assign_online = !!obj?.assign_online
+  const assign_offline = !!obj?.assign_offline
+  const assign_error = !!obj?.assign_error
+  const assign_hardware = !!obj?.assign_hardware
+  const assign_software = !!obj?.assign_software
+  const assign_battery = !!obj?.assign_battery
+  const assign_peripheral = !!obj?.assign_peripheral
+  const assign_security = !!obj?.assign_security
+  const lang = obj?.lang ?? ''
   let filter_id = [], filter_device = list.map(o => o)
-  if (!!assign_device) {
-    const arr = JSON.parse(assign_device)
+  const find_device = !!content && type === 'find_device'
+  if (find_device) {
+    const arr = JSON.parse(content)
     filter_device = Array.isArray(arr) ? Array.from(arr).map(o => by_id[o.id]) : []
     if (!Number.isNaN(assign_index) && assign_index > 0 && assign_index <= filter_device.length) {
       let index = assign_index - 1
       if (assign_last) index = filter_device.length - 1 - index
       filter_id = [filter_device[index].id]
-    }
-    if (filter_id.length === 0 && id.length === 0 && name.length === 0 && ip.length === 0 && os.length === 0
-      && label1.length === 0 && label2.length === 0 && !assign_id && !assign_name && !assign_ip && !assign_os
-      && !assign_label1 && !assign_label2 && !assign_online && !assign_offline && !assign_error
-      && !assign_hardware && !assign_software && !assign_battery && !assign_peripheral && !assign_security) {
-      filter_id = filter_device.map(o => o.id)
     }
   }
   if (filter_id.length === 0) {
@@ -125,7 +124,6 @@ function main({text, device, assign_device}) {
       return match
     }).map(o => o.id)
   }
-
   const filter = filter_id.map(id => {
     const o = by_id[id]
     return {
@@ -135,22 +133,74 @@ function main({text, device, assign_device}) {
       timezone: o.tz,
     }
   })
-  const result = JSON.stringify({
-    type: is_trigger ? 'trigger_task' : 'control_task',
+  let result = JSON.stringify({
+    type: 'find_device',
     data: {
-      ...obj,
+      assign_device: is_device || find_device,
       targetDevices: filter,
-    },
+      lang,
+    }
   })
-  const no_confirm = actionCode === '90001' && !is_trigger && !!assign_device
-  && filter.length === 1 && (filter_device.length === 1 || assign_reboot) ? 1 : 0
-  const task = filter.length > 0 ? result : ''
-
+  let res = filter.length > 0 ? JSON.stringify(filter) : ''
+  const is_remote = filter.length === 1 && assign_remote && find_device ? 1 : 0
+  if (is_remote === 1) {
+    result = JSON.stringify({
+      type: 'remote_desktop',
+      data: {
+        targetDevices: filter.map(o => {
+          const d = by_id[o.id]
+          return {
+            ...o,
+            ip: d.ip,
+            status: d.st,
+          }
+        }),
+        lang,
+      }
+    })
+    res = ''
+  }
+  const is_reboot = filter.length === 1 && assign_reboot && find_device ? 1 : 0
+  if (is_reboot === 1) {
+    result = JSON.stringify({
+      type: 'control_task',
+      data: {
+        actionCode: '90001',
+        targetDevices: filter,
+        lang,
+        schedule: {
+          scheduleType: 'NONE',
+        }
+      }
+    })
+    res = ''
+  }
+  const is_find_device = assign_index !== -1 || id.length > 0 || name.length > 0 || ip.length > 0
+  || os.length > 0 || label1.length > 0 || label2.length > 0 || assign_online || assign_offline || assign_error
+  || assign_hardware || assign_software || assign_battery || assign_peripheral || assign_security ? 1 : 0
   return {
     result,
-    task,
-    device: obj,
-    no_confirm,
+    content: res,
+    type: !!res ? 'find_device' : '',
+    is_remote,
+    is_reboot,
+    is_find_device,
   }
 }
 
+
+/**
+ * 处理新增任务
+ */
+function main({body, is_remote, is_reboot, is_find_device}) {
+  const obj = JSON.parse(body)
+  const outputs = obj?.data?.outputs ?? {}
+  return {
+    result: outputs?.result ?? '',
+    content: outputs?.content ?? '',
+    type: outputs?.type ?? '',
+    is_remote,
+    is_reboot,
+    is_find_device,
+  }
+}
