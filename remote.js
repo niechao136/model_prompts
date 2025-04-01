@@ -20,7 +20,6 @@ function main({text, device, assign_device, remote_desktop}) {
     by_id[o.id] = o
   })
   const obj = handleLLM(text)
-  const is_device = !!obj?.assign_device
   const assign_index = Number(obj?.assign_index)
   const assign_last = !!obj?.assign_last
   const id = Array.isArray(obj?.targetDevices?.id) ? Array.from(obj.targetDevices.id) : []
@@ -30,19 +29,23 @@ function main({text, device, assign_device, remote_desktop}) {
   const assign_name = !!obj?.targetDevices?.assign_name
   const assign_ip = !!obj?.targetDevices?.assign_ip
   let filter_id = [], filter_device = list.map(o => o)
-  if (is_device && (!!assign_device || !!remote_desktop)) {
+  if (!!assign_device || !!remote_desktop) {
     if (!!assign_device) {
       const arr = JSON.parse(assign_device)
       filter_device = Array.isArray(arr) ? Array.from(arr).map(o => by_id[o.id]) : []
     }
     if (!!remote_desktop) {
       const obj = JSON.parse(remote_desktop)
-      filter_device =Array.isArray(obj?.data?.targetDevices) ? Array.from(obj?.data?.targetDevices).map(o => by_id[o.id]) : []
+      filter_device = Array.isArray(obj?.data?.targetDevices) ? Array.from(obj?.data?.targetDevices).map(o => by_id[o.id]) : []
     }
     if (!Number.isNaN(assign_index) && assign_index > 0 && assign_index <= filter_device.length) {
       let index = assign_index - 1
       if (assign_last) index = filter_device.length - 1 - index
       filter_id = [filter_device[index].id]
+    }
+    if (filter_device.length === 1 && filter_id.length === 0 && !assign_id && !assign_name && !assign_ip
+      && id.length === 0 && name.length === 0 && ip.length === 0) {
+      filter_id = [filter_device[0].id]
     }
   }
   if (filter_id.length === 0) {

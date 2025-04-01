@@ -14,8 +14,15 @@ function handleLLM(text) {
 }
 function main({text, device, assign_device}) {
   device = JSON.parse(device)
+  const list = Array.isArray(device) ? Array.from(device) : []
+  const by_id = {}
+  list.forEach(o => {
+    by_id[o.id] = o
+  })
   const obj = handleLLM(text)
   const is_trigger = !!obj?.is_trigger
+  const assign_index = Number(obj?.assign_index)
+  const assign_last = !!obj?.assign_last
   const id = Array.isArray(obj?.targetDevices?.id) ? Array.from(obj.targetDevices.id) : []
   const name = Array.isArray(obj?.targetDevices?.name) ? Array.from(obj.targetDevices.name) : []
   const ip = Array.isArray(obj?.targetDevices?.ip) ? Array.from(obj.targetDevices.ip) : []
@@ -30,19 +37,31 @@ function main({text, device, assign_device}) {
   const assign_label2 = !!obj?.targetDevices?.assign_label2
   const assign_online = !!obj?.targetDevices?.assign_online
   const assign_offline = !!obj?.targetDevices?.assign_offline
-  const is_device = !!obj?.targetDevices?.assign_device
   const assign_error = !!obj?.targetDevices?.assign_error
   const assign_hardware = !!obj?.targetDevices?.assign_hardware
   const assign_software = !!obj?.targetDevices?.assign_software
   const assign_battery = !!obj?.targetDevices?.assign_battery
   const assign_peripheral = !!obj?.targetDevices?.assign_peripheral
   const assign_security = !!obj?.targetDevices?.assign_security
-  let filter
-  if (is_device && !!assign_device) {
+  const actionCode = obj?.actionCode
+  let filter_id = [], filter_device = list.map(o => o)
+  if (!!assign_device) {
     const arr = JSON.parse(assign_device)
-    filter = Array.isArray(arr) ? Array.from(arr) : []
-  } else {
-    filter = Array.isArray(device) ? Array.from(device).filter(o => {
+    filter_device = Array.isArray(arr) ? Array.from(arr).map(o => by_id[o.id]) : []
+    if (!Number.isNaN(assign_index) && assign_index > 0 && assign_index <= filter_device.length) {
+      let index = assign_index - 1
+      if (assign_last) index = filter_device.length - 1 - index
+      filter_id = [filter_device[index].id]
+    }
+    if (filter_id.length === 0 && id.length === 0 && name.length === 0 && ip.length === 0 && os.length === 0
+      && label1.length === 0 && label2.length === 0 && !assign_id && !assign_name && !assign_ip && !assign_os
+      && !assign_label1 && !assign_label2 && !assign_online && !assign_offline && !assign_error
+      && !assign_hardware && !assign_software && !assign_battery && !assign_peripheral && !assign_security) {
+      filter_id = filter_device.map(o => o.id)
+    }
+  }
+  if (filter_id.length === 0) {
+    filter_id = filter_device.filter(o => {
       const match_id = id.includes(o.id)
       const match_name = name.includes(o.nm)
       const match_ip = ip.includes(o.ip)
@@ -103,16 +122,18 @@ function main({text, device, assign_device}) {
       if (assign_peripheral) match = match && match_peripheral
       if (assign_security) match = match && match_security
       return match
-    }).map(o => {
-      return {
-        id: o.id,
-        name: o.nm,
-        os: o.os,
-        timezone: o.tz,
-      }
-    }) : []
+    }).map(o => o.id)
   }
 
+  const filter = filter_id.map(id => {
+    const o = by_id[id]
+    return {
+      id: o.id,
+      name: o.nm,
+      os: o.os,
+      timezone: o.tz,
+    }
+  })
   const result = JSON.stringify({
     type: is_trigger ? 'trigger_task' : 'control_task',
     data: {
@@ -120,12 +141,15 @@ function main({text, device, assign_device}) {
       targetDevices: filter,
     },
   })
+  const no_confirm = actionCode === '90001' && !is_trigger && !!assign_device
+  && filter_device.length === 1 && filter.length === 1 ? 1 : 0
   const task = filter.length > 0 ? result : ''
 
   return {
     result,
     task,
     device: obj,
+    no_confirm,
   }
 }
 
