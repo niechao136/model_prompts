@@ -133,3 +133,39 @@ function main({content, body}) {
     type: '',
   }
 }
+
+
+
+function main({text})
+{
+  const obj = {"inputs":{"question":"{{#1743578342387.question#}}","type":"{{#1743578342387.cache_type#}}","content":"{{#1743578342387.cache_content#}}","timezone":"{{#1743578342387.timezone#}}","api":"{{#1743578342387.api#}}","token":"{{#1743578342387.token#}}"},"response_mode":"blocking","user":"deviceOn"}
+  return {
+    result: String(text).replaceAll(/<think>[\s\S]*?<\/think>/g, '').replaceAll(/<details[\s\S]*?<\/details>/g, ''),
+    content: '',
+    type: '',
+  }
+}
+
+function main({}) {
+  return {
+    "cache_content": "[{\"id\":\"A0:19:B2:D1:F5:2D\",\"name\":\"rk3568_s\",\"os\":\"android\",\"timezone\":\"UTC+08:00\"},{\"id\":\"00:0A:F5:E5:A3:04\",\"name\":\"AIM-78_WIFI\",\"os\":\"android\",\"timezone\":\"UTC+08:00\"},{\"id\":\"C4:00:AD:50:5F:33\",\"name\":\"PPC-3211W-P75A\",\"os\":\"windows\",\"timezone\":\"UTC+08:00\"},{\"id\":\"C4:00:AD:87:C4:6B\",\"name\":\"昆山测试windows\",\"os\":\"windows\",\"timezone\":\"UTC+08:00\"}]",
+    "cache_type": "find_device",
+    "api": "https://dev-apps.deviceon-iservice.com/api",
+    "token": "eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoxODksInVzZXJfa2V5IjoiYzA0MDdiNzgtY2M4Mi00NmU1LTkzZjItMTgwMjc4NzZjMmM5IiwidXNlcm5hbWUiOiJuaWVjaGFvMTU4QHFxLmNvbSJ9.i5R3PjWVlj6SDkS0YB1D-K02nbL9XMUjhRkSRmABtVKQj7HxHzYeyRa4jmo6PPdKaW5AcXf8SOBBSoxzAeecNw",
+    "timezone": "UTC+08:00",
+    "question": "AIM-78_WIFI REMOTE_DESKTOP",
+    "request": JSON.stringify({
+      "inputs": {
+        "question": "AIM-78_WIFI REMOTE_DESKTOP",
+        "type": "find_device",
+        "content": "[{\"id\":\"A0:19:B2:D1:F5:2D\",\"name\":\"rk3568_s\",\"os\":\"android\",\"timezone\":\"UTC+08:00\"},{\"id\":\"00:0A:F5:E5:A3:04\",\"name\":\"AIM-78_WIFI\",\"os\":\"android\",\"timezone\":\"UTC+08:00\"},{\"id\":\"C4:00:AD:50:5F:33\",\"name\":\"PPC-3211W-P75A\",\"os\":\"windows\",\"timezone\":\"UTC+08:00\"},{\"id\":\"C4:00:AD:87:C4:6B\",\"name\":\"昆山测试windows\",\"os\":\"windows\",\"timezone\":\"UTC+08:00\"}]",
+        "api": "https://dev-apps.deviceon-iservice.com/api",
+        "token": "eyJhbGciOiJIUzUxMiJ9.eyJ1c2VyX2lkIjoxODksInVzZXJfa2V5IjoiYzA0MDdiNzgtY2M4Mi00NmU1LTkzZjItMTgwMjc4NzZjMmM5IiwidXNlcm5hbWUiOiJuaWVjaGFvMTU4QHFxLmNvbSJ9.i5R3PjWVlj6SDkS0YB1D-K02nbL9XMUjhRkSRmABtVKQj7HxHzYeyRa4jmo6PPdKaW5AcXf8SOBBSoxzAeecNw",
+        "timezone": "UTC+08:00",
+      },
+      "response_mode": "blocking",
+      "user": "deviceOn"
+    })
+  }
+}
+
