@@ -32,23 +32,17 @@ function main({text, device, content, type}) {
   const assign_name = !!obj?.targetDevices?.assign_name
   const assign_ip = !!obj?.targetDevices?.assign_ip
   let filter_id = [], filter_device = list.map(o => o)
-  if (!!content && (type === 'find_device' || type === 'remote_desktop')) {
-    if (type === 'find_device') {
-      const arr = JSON.parse(content)
-      filter_device = Array.isArray(arr) ? Array.from(arr).map(o => by_id[o.id]) : []
-    }
-    if (type === 'remote_desktop') {
-      const obj = JSON.parse(content)
-      filter_device = Array.isArray(obj?.data?.targetDevices) ? Array.from(obj?.data?.targetDevices).map(o => by_id[o.id]) : []
-    }
+  if (!!content && type === 'find_device') {
+    const obj = JSON.parse(content)
+    filter_device = Array.isArray(obj?.data?.targetDevices) ? Array.from(obj?.data?.targetDevices).map(o => by_id[o.id]) : []
     if (!Number.isNaN(assign_index) && assign_index > 0 && assign_index <= filter_device.length) {
       let index = assign_index - 1
       if (assign_last) index = filter_device.length - 1 - index
       filter_id = [filter_device[index].id]
     }
-    if (filter_device.length === 1 && filter_id.length === 0 && !assign_id && !assign_name && !assign_ip
+    if (filter_id.length === 0 && !assign_id && !assign_name && !assign_ip
       && id.length === 0 && name.length === 0 && ip.length === 0) {
-      filter_id = [filter_device[0].id]
+      filter_id = filter_device.map(o => o.id)
     }
   }
   if (filter_id.length === 0) {
@@ -86,13 +80,11 @@ function main({text, device, content, type}) {
     },
   })
   const task = filter.length > 1 ? result : ''
-  const is_remote = assign_index !== -1 || id.length > 0 || name.length > 0 || ip.length > 0 ? 1 : 0
 
   return {
     result,
     content: task,
     type: !!task ? 'remote_desktop' : '',
-    is_remote,
     device: obj,
   }
 }

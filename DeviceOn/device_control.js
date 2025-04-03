@@ -15,7 +15,7 @@ function handleLLM(text) {
   }
   return obj
 }
-function main({text, device, type, content, question}) {
+function main({text, device, type, content}) {
   device = JSON.parse(device)
   const list = Array.isArray(device) ? Array.from(device) : []
   const by_id = {}
@@ -24,7 +24,6 @@ function main({text, device, type, content, question}) {
   })
   const obj = handleLLM(text)
   const is_trigger = !!obj?.is_trigger
-  const assign_reboot = String(question).endsWith(' REBOOT')
   const assign_index = Number(obj?.assign_index)
   const assign_last = !!obj?.assign_last
   const id = Array.isArray(obj?.targetDevices?.id) ? Array.from(obj.targetDevices.id) : []
@@ -51,8 +50,8 @@ function main({text, device, type, content, question}) {
   let filter_id = [], filter_device = list.map(o => o)
   const find_device = !!content && type === 'find_device'
   if (find_device) {
-    const arr = JSON.parse(content)
-    filter_device = Array.isArray(arr) ? Array.from(arr).map(o => by_id[o.id]) : []
+    const obj = JSON.parse(content)
+    filter_device = Array.isArray(obj?.data?.targetDevices) ? Array.from(obj?.data?.targetDevices).map(o => by_id[o.id]) : []
     if (!Number.isNaN(assign_index) && assign_index > 0 && assign_index <= filter_device.length) {
       let index = assign_index - 1
       if (assign_last) index = filter_device.length - 1 - index
@@ -147,7 +146,7 @@ function main({text, device, type, content, question}) {
     },
   })
   const no_confirm = actionCode === '90001' && !is_trigger && !!find_device
-  && filter.length === 1 && (filter_device.length === 1 || assign_reboot) ? 1 : 0
+  && filter.length === 1 && filter_device.length === 1 ? 1 : 0
   const task = filter.length > 0 ? result : ''
 
   return {

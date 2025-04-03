@@ -15,7 +15,7 @@ function handleLLM(text) {
   }
   return obj
 }
-function main({text, device, type, content, question}) {
+function main({text, device, type, content}) {
   device = JSON.parse(device)
   const list = Array.isArray(device) ? Array.from(device) : []
   const by_id = {}
@@ -23,8 +23,6 @@ function main({text, device, type, content, question}) {
     by_id[o.id] = o
   })
   const obj = handleLLM(text)
-  const assign_remote = String(question).endsWith(' REMOTE_DESKTOP')
-  const assign_reboot = String(question).endsWith(' REBOOT')
   const is_device = !!obj?.assign_device
   const assign_index = Number(obj?.assign_index)
   const assign_last = !!obj?.assign_last
@@ -52,8 +50,8 @@ function main({text, device, type, content, question}) {
   let filter_id = [], filter_device = list.map(o => o)
   const find_device = !!content && type === 'find_device'
   if (find_device) {
-    const arr = JSON.parse(content)
-    filter_device = Array.isArray(arr) ? Array.from(arr).map(o => by_id[o.id]) : []
+    const obj = JSON.parse(content)
+    filter_device = Array.isArray(obj?.data?.targetDevices) ? Array.from(obj?.data?.targetDevices).map(o => by_id[o.id]) : []
     if (!Number.isNaN(assign_index) && assign_index > 0 && assign_index <= filter_device.length) {
       let index = assign_index - 1
       if (assign_last) index = filter_device.length - 1 - index
@@ -131,6 +129,8 @@ function main({text, device, type, content, question}) {
       name: o.nm,
       os: o.os,
       timezone: o.tz,
+      ip: o.ip,
+      status: o.st,
     }
   })
   let result = JSON.stringify({
@@ -141,40 +141,7 @@ function main({text, device, type, content, question}) {
       lang,
     }
   })
-  let res = filter.length > 0 ? JSON.stringify(filter) : ''
-  const is_remote = filter.length === 1 && assign_remote && find_device ? 1 : 0
-  if (is_remote === 1) {
-    result = JSON.stringify({
-      type: 'remote_desktop',
-      data: {
-        targetDevices: filter.map(o => {
-          const d = by_id[o.id]
-          return {
-            ...o,
-            ip: d.ip,
-            status: d.st,
-          }
-        }),
-        lang,
-      }
-    })
-    res = ''
-  }
-  const is_reboot = filter.length === 1 && assign_reboot && find_device ? 1 : 0
-  if (is_reboot === 1) {
-    result = JSON.stringify({
-      type: 'control_task',
-      data: {
-        actionCode: '90001',
-        targetDevices: filter,
-        lang,
-        schedule: {
-          scheduleType: 'NONE',
-        }
-      }
-    })
-    res = ''
-  }
+  let res = filter.length > 0 ? result : ''
   const is_find_device = assign_index !== -1 || id.length > 0 || name.length > 0 || ip.length > 0
   || os.length > 0 || label1.length > 0 || label2.length > 0 || assign_online || assign_offline || assign_error
   || assign_hardware || assign_software || assign_battery || assign_peripheral || assign_security ? 1 : 0
@@ -182,8 +149,6 @@ function main({text, device, type, content, question}) {
     result,
     content: res,
     type: !!res ? 'find_device' : '',
-    is_remote,
-    is_reboot,
     is_find_device,
   }
 }
